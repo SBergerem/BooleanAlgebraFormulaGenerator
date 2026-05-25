@@ -4,7 +4,7 @@ project(BooleanAlgebraFormulaGenerator LANGUAGES CXX)
 
 add_executable(BAFormulaGenerator
     src/main.cpp
-    src/parser.cpp
+    src/formula_validator.cpp
     src/tokenizer.cpp
 )
 
