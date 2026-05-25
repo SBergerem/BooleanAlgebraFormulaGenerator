@@ -33,6 +33,34 @@ Node_Operator::~Node_Operator()
 Node_Variable::Node_Variable(Tokenizer::Token token)
     : Node(token) {}
 
+bool Parser::parseExpression(const std::vector<Tokenizer::Token> &tokens, size_t startIndex, size_t endIndex, Node *&resultNode)
+{
+    resultNode = nullptr;
+
+    if (startIndex == endIndex)
+    {
+        if (tokens[startIndex].type == Tokenizer::TokenType::VARIABLE)
+        {
+            resultNode = new Node_Variable(tokens[startIndex]);
+            return true;
+        }
+        else
+            return false;
+    }
+
+    if (tokens[startIndex].type == Tokenizer::TokenType::NOT)
+    {
+        Node *childNode = nullptr;
+        if (parseExpression(tokens, startIndex + 1, endIndex, childNode))
+        {
+            resultNode = new Node_Invert(tokens[startIndex], childNode);
+            return true;
+        }
+    }
+
+        return false;
+}
+
 void Parser::parse(const std::vector<Tokenizer::Token> &tokens, Node *&rootNode)
 {
     if (rootNode != nullptr)
@@ -76,11 +104,4 @@ void Parser::parse(const std::vector<Tokenizer::Token> &tokens, Node *&rootNode)
 
         rootNode = new Node_Operator(tokens[1], leftChildNode, rightChildNode);
     }
-
-    /*    for (Tokenizer::Token token : tokens)
-        {
-            if (token.type == Tokenizer::TokenType::VARIABLE)
-                if (rootNode == nullptr)
-                    rootNode = new Node(token);
-        } */
 }

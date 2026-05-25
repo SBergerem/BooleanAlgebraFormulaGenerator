@@ -34,8 +34,9 @@ struct Node_Variable : Node
 
 class Parser
 {
-    private:
-    static void parseExpression(const std::vector<Tokenizer::Token> &tokens)
+private:
+    static bool parseExpression(const std::vector<Tokenizer::Token> &tokens, size_t startIndex, size_t endIndex, Node *&Node);
+
 public:
     static void parse(const std::vector<Tokenizer::Token> &tokens, Node *&rootNode);
 };
