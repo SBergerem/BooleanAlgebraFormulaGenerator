@@ -4,8 +4,9 @@ project(BooleanAlgebraFormulaGenerator LANGUAGES CXX)
 
 add_executable(BAFormulaGenerator
     src/main.cpp
-    src/formula_validator.cpp
+    src/validator.cpp
     src/tokenizer.cpp
+    src/parser.cpp
 )
 
 target_compile_features(BAFormulaGenerator PRIVATE cxx_std_20)

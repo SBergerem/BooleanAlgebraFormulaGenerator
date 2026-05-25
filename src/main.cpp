@@ -1,12 +1,18 @@
 #include <string>
 #include <vector>
 #include "tokenizer.hpp"
-#include "formula_validator.hpp"
+#include "validator.hpp"
+#include "parser.hpp"
 
 int main()
 {
-    std::string input = "(A OR (A AND (!B)))";
+    std::string input = "A OR B";
     std::vector<Tokenizer::Token> tokens = Tokenizer::tokenize(input);
-    bool result = FormulaValidator::validateFormula(tokens);
+    if (Validator::validateFormula(tokens))
+    {
+        Node *rootNode = nullptr;
+        Parser::parse(tokens, rootNode);
+        delete rootNode;
+    }
     return 0;
 }

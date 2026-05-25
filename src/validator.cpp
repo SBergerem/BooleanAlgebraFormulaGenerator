@@ -1,6 +1,6 @@
-#include "formula_validator.hpp"
+#include "validator.hpp"
 
-bool FormulaValidator::validateFormula(const std::vector<Tokenizer::Token> &tokens)
+bool Validator::validateFormula(const std::vector<Tokenizer::Token> &tokens)
 {
     if (tokens.size() == 0)
         return false;
