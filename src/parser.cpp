@@ -2,50 +2,110 @@
 
 #include "parser.hpp"
 
-Node::Node(Tokenizer::Token token)
+bool Parser::checkForOuterParentheses(const std::vector<Tokenizer::Token> &tokens, size_t startIndex, size_t endIndex)
 {
-    this->token = token;
+    if (endIndex <= startIndex + 1)
+        return false;
+
+    if (tokens[startIndex].type != Tokenizer::TokenType::OPEN_PARENTHESIS)
+        return false;
+
+    if (tokens[endIndex].type != Tokenizer::TokenType::CLOSE_PARENTHESIS)
+        return false;
+
+    int parenthesisDepth = 0;
+    for (size_t i = startIndex; i < endIndex; i++)
+    {
+        if (tokens[i].type == Tokenizer::TokenType::OPEN_PARENTHESIS) //
+            parenthesisDepth++;
+
+        if (tokens[i].type == Tokenizer::TokenType::CLOSE_PARENTHESIS) //
+            parenthesisDepth--;
+
+        if (parenthesisDepth == 0)
+            return false;
+    }
+
+    return true;
 }
 
-Node_Invert::Node_Invert(Tokenizer::Token token, Node *child)
-    : Node(token)
+size_t Parser::getIndexOfOperatorByPrio(const std::vector<Tokenizer::Token> &tokens, size_t startIndex, size_t endIndex)
 {
-    this->child = child;
-}
+    int parenthesisDepth = 0;
+    int Priority = -1;
+    size_t index = tokens.size();
+    bool foundOperator = false;
 
-Node_Invert::~Node_Invert()
-{
-    delete child;
-}
-Node_Operator::Node_Operator(Tokenizer::Token token, Node *leftChild, Node *rightChild)
-    : Node(token)
-{
-    this->leftChild = leftChild;
-    this->rightChild = rightChild;
-}
+    for (size_t i = endIndex + 1; i-- > startIndex;)
+    {
+        if (tokens[i].type == Tokenizer::TokenType::OPEN_PARENTHESIS)
+            parenthesisDepth--;
 
-Node_Operator::~Node_Operator()
-{
-    delete leftChild;
-    delete rightChild;
-}
+        if (tokens[i].type == Tokenizer::TokenType::CLOSE_PARENTHESIS)
+            parenthesisDepth++;
 
-Node_Variable::Node_Variable(Tokenizer::Token token)
-    : Node(token) {}
+        if (parenthesisDepth == 0)
+        {
+            // Tokenizer::TokenType::XOR
+            int currPriority = Tokenizer::getPriorityOfOperation(tokens[i].type);
+
+            if (currPriority < 0)
+                continue;
+
+            if ((Priority > currPriority) || !foundOperator)
+            {
+                index = i;
+                Priority = currPriority;
+                foundOperator = true;
+            }
+        }
+    }
+
+    return index;
+}
 
 bool Parser::parseExpression(const std::vector<Tokenizer::Token> &tokens, size_t startIndex, size_t endIndex, Node *&resultNode)
 {
     resultNode = nullptr;
 
+    if (startIndex > endIndex)
+        return false;
+
     if (startIndex == endIndex)
     {
         if (tokens[startIndex].type == Tokenizer::TokenType::VARIABLE)
         {
-            resultNode = new Node_Variable(tokens[startIndex]);
+            resultNode = new Variable_Node(tokens[startIndex]);
             return true;
         }
         else
             return false;
+    }
+
+    if (checkForOuterParentheses(tokens, startIndex, endIndex))
+    {
+        startIndex++;
+        endIndex--;
+        return parseExpression(tokens, startIndex, endIndex, resultNode);
+    }
+
+    size_t operatorIndex = getIndexOfOperatorByPrio(tokens, startIndex, endIndex);
+    if (operatorIndex < tokens.size())
+    {
+        Node *leftChildNode = nullptr;
+        Node *rightChildNode = nullptr;
+
+        if (!parseExpression(tokens, startIndex, operatorIndex - 1, leftChildNode))
+            return false;
+
+        if (!parseExpression(tokens, operatorIndex + 1, endIndex, rightChildNode))
+        {
+            delete leftChildNode;
+            return false;
+        }
+
+        resultNode = new Operator_Node(tokens[operatorIndex], leftChildNode, rightChildNode);
+        return true;
     }
 
     if (tokens[startIndex].type == Tokenizer::TokenType::NOT)
@@ -53,15 +113,15 @@ bool Parser::parseExpression(const std::vector<Tokenizer::Token> &tokens, size_t
         Node *childNode = nullptr;
         if (parseExpression(tokens, startIndex + 1, endIndex, childNode))
         {
-            resultNode = new Node_Invert(tokens[startIndex], childNode);
+            resultNode = new Invert_Node(tokens[startIndex], childNode);
             return true;
         }
     }
 
-        return false;
+    return false;
 }
 
-void Parser::parse(const std::vector<Tokenizer::Token> &tokens, Node *&rootNode)
+bool Parser::parse(const std::vector<Tokenizer::Token> &tokens, Node *&rootNode)
 {
     if (rootNode != nullptr)
     {
@@ -72,36 +132,14 @@ void Parser::parse(const std::vector<Tokenizer::Token> &tokens, Node *&rootNode)
     if (tokens.size() == 0)
     {
         std::cout << "Tokencount is zero. Abort.." << std::endl;
-        return;
+        return false;
     }
 
-    if ((tokens.size() == 1) && (tokens[0].type == Tokenizer::TokenType::VARIABLE))
-        rootNode = new Node_Variable(tokens[0]);
-
-    if ((tokens.size() == 2) && (tokens[0].type == Tokenizer::TokenType::NOT))
+    if (!parseExpression(tokens, 0, tokens.size() - 1, rootNode))
     {
-        Node *childNode = nullptr;
-        if (tokens[1].type == Tokenizer::TokenType::VARIABLE)
-            childNode = new Node_Variable(tokens[1]);
-        rootNode = new Node_Invert(tokens[0], childNode);
+        std::cout << "Could not parse expression. Abort.." << std::endl;
+        return false;
     }
 
-    if ((tokens.size() == 3) && Tokenizer::isOneOf(tokens[1].type,
-                                                   {Tokenizer::TokenType::AND,
-                                                    Tokenizer::TokenType::OR,
-                                                    Tokenizer::TokenType::NAND,
-                                                    Tokenizer::TokenType::NOR,
-                                                    Tokenizer::TokenType::XOR}))
-    {
-        Node *leftChildNode = nullptr;
-        Node *rightChildNode = nullptr;
-
-        if (tokens[0].type == Tokenizer::TokenType::VARIABLE)
-            leftChildNode = new Node_Variable(tokens[0]);
-
-        if (tokens[2].type == Tokenizer::TokenType::VARIABLE)
-            rightChildNode = new Node_Variable(tokens[2]);
-
-        rootNode = new Node_Operator(tokens[1], leftChildNode, rightChildNode);
-    }
+    return true;
 }

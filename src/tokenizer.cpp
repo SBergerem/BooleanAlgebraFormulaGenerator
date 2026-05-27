@@ -23,6 +23,22 @@ bool Tokenizer::isOneOf(TokenType value, std::initializer_list<TokenType> list)
     return std::find(list.begin(), list.end(), value) != list.end();
 }
 
+int Tokenizer::getPriorityOfOperation(TokenType tokenType)
+{
+    if (isOneOf(tokenType, {TokenType::OR,
+                            TokenType::NOR}))
+        return 0;
+
+    if (tokenType == TokenType::XOR)
+        return 1;
+
+    if (isOneOf(tokenType, {TokenType::AND,
+                            TokenType::NAND}))
+        return 2;
+
+    return -1;
+}
+
 std::vector<Tokenizer::Token> Tokenizer::tokenize(const std::string &input)
 {
     std::vector<Tokenizer::Token> tokens;

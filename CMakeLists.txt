@@ -7,6 +7,8 @@ add_executable(BAFormulaGenerator
     src/validator.cpp
     src/tokenizer.cpp
     src/parser.cpp
+    src/node.cpp
+    src/normalizer.cpp
 )
 
 target_compile_features(BAFormulaGenerator PRIVATE cxx_std_20)

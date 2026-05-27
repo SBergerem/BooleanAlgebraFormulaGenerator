@@ -3,10 +3,12 @@
 #include "tokenizer.hpp"
 #include "validator.hpp"
 #include "parser.hpp"
+#include "normalizer.hpp"
 
 int main()
 {
-    std::string input = "A OR B";
+    std::string input = "(A AND B) OR (!A AND !B)";
+    Normalizer::normalizeInputString(input);
     std::vector<Tokenizer::Token> tokens = Tokenizer::tokenize(input);
     if (Validator::validateFormula(tokens))
     {

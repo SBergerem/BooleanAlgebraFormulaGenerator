@@ -7,18 +7,19 @@
 class Tokenizer
 {
 public:
+    // Tokens after Priority
     enum class TokenType
     {
+        UNKNOWN,
         VARIABLE,
         OPEN_PARENTHESIS,
         CLOSE_PARENTHESIS,
         NOT,
-        AND,
         OR,
-        NAND,
         NOR,
         XOR,
-        UNKNOWN
+        AND,
+        NAND
     };
 
     static const std::map<std::string, TokenType> OPERATORS;
@@ -31,4 +32,5 @@ public:
 
     static std::vector<Token> tokenize(const std::string &input);
     static bool isOneOf(TokenType value, std::initializer_list<TokenType> list);
+    static int getPriorityOfOperation(TokenType tokenType);
 };
